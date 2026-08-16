@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,18 @@ class EventDeduplicatorTest {
         List<ZonedDateTime> actual = deduplicator.distinctEventTimes(List.of(utcEvent, tokyoEvent));
 
         assertEquals(1, actual.size(), "同一瞬間のイベントは1件だけ処理されるべき");
+    }
+
+    @Test
+    void firstReceivedZoneIsPreservedForDisplayAfterInstantBasedDeduplication() {
+        ZonedDateTime tokyoEvent = ZonedDateTime.parse("2025-01-15T09:00:00+09:00[Asia/Tokyo]");
+        ZonedDateTime utcEvent = ZonedDateTime.parse("2025-01-15T00:00:00Z");
+
+        List<ZonedDateTime> actual = deduplicator.distinctEventTimes(List.of(tokyoEvent, utcEvent));
+
+        assertEquals(1, actual.size());
+        assertEquals(ZoneId.of("Asia/Tokyo"), actual.getFirst().getZone(),
+                "重複排除キーをInstantへ変えても、先に受信した表示用ゾーンは保持する");
     }
 
     @Test
